@@ -1,15 +1,15 @@
 name: Extension Submission
 description: Submit your extension to the Spec Kit catalog
-title: "[Extension]: Add "
-labels: ["extension-submission", "enhancement", "needs-triage"]
+title: '[Extension]: Add '
+labels: ['extension-submission', 'enhancement', 'needs-triage']
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for contributing an extension! This template helps you submit your extension to the community catalog.
-        
+
         **Before submitting:**
-        - Review the [Extension Publishing Guide](https://github.com/github/spec-kit/blob/main/extensions/EXTENSION-PUBLISHING-GUIDE.md)
+        - Review the [Extension Publishing Guide](https://github.com/nhanvonguyen-infotrack/spec-kit/blob/main/extensions/EXTENSION-PUBLISHING-GUIDE.md)
         - Ensure your extension has a valid `extension.yml` manifest
         - Create a GitHub release with a version tag (e.g., v1.0.0)
         - Test installation: `specify extension add --from <your-release-url>`
@@ -19,7 +19,7 @@ body:
     attributes:
       label: Extension ID
       description: Unique extension identifier (lowercase with hyphens only)
-      placeholder: "e.g., jira-integration"
+      placeholder: 'e.g., jira-integration'
     validations:
       required: true
 
@@ -28,7 +28,7 @@ body:
     attributes:
       label: Extension Name
       description: Human-readable extension name
-      placeholder: "e.g., Jira Integration"
+      placeholder: 'e.g., Jira Integration'
     validations:
       required: true
 
@@ -37,7 +37,7 @@ body:
     attributes:
       label: Version
       description: Semantic version number
-      placeholder: "e.g., 1.0.0"
+      placeholder: 'e.g., 1.0.0'
     validations:
       required: true
 
@@ -55,7 +55,7 @@ body:
     attributes:
       label: Author
       description: Your name or organization
-      placeholder: "e.g., John Doe or Acme Corp"
+      placeholder: 'e.g., John Doe or Acme Corp'
     validations:
       required: true
 
@@ -64,7 +64,7 @@ body:
     attributes:
       label: Repository URL
       description: GitHub repository URL for your extension
-      placeholder: "https://github.com/your-org/spec-kit-your-extension"
+      placeholder: 'https://github.com/your-org/spec-kit-your-extension'
     validations:
       required: true
 
@@ -73,7 +73,7 @@ body:
     attributes:
       label: Download URL
       description: URL to the GitHub release archive (e.g., v1.0.0.zip)
-      placeholder: "https://github.com/your-org/spec-kit-your-extension/archive/refs/tags/v1.0.0.zip"
+      placeholder: 'https://github.com/your-org/spec-kit-your-extension/archive/refs/tags/v1.0.0.zip'
     validations:
       required: true
 
@@ -82,7 +82,7 @@ body:
     attributes:
       label: License
       description: Open source license type
-      placeholder: "e.g., MIT, Apache-2.0"
+      placeholder: 'e.g., MIT, Apache-2.0'
     validations:
       required: true
 
@@ -91,28 +91,28 @@ body:
     attributes:
       label: Homepage (optional)
       description: Link to extension homepage or documentation site
-      placeholder: "https://..."
+      placeholder: 'https://...'
 
   - type: input
     id: documentation
     attributes:
       label: Documentation URL (optional)
       description: Link to detailed documentation
-      placeholder: "https://github.com/your-org/spec-kit-your-extension/blob/main/docs/"
+      placeholder: 'https://github.com/your-org/spec-kit-your-extension/blob/main/docs/'
 
   - type: input
     id: changelog
     attributes:
       label: Changelog URL (optional)
       description: Link to changelog file
-      placeholder: "https://github.com/your-org/spec-kit-your-extension/blob/main/CHANGELOG.md"
+      placeholder: 'https://github.com/your-org/spec-kit-your-extension/blob/main/CHANGELOG.md'
 
   - type: input
     id: speckit-version
     attributes:
       label: Required Spec Kit Version
       description: Minimum Spec Kit version required
-      placeholder: "e.g., >=0.1.0"
+      placeholder: 'e.g., >=0.1.0'
     validations:
       required: true
 
@@ -131,7 +131,7 @@ body:
     attributes:
       label: Number of Commands
       description: How many commands does your extension provide?
-      placeholder: "e.g., 3"
+      placeholder: 'e.g., 3'
     validations:
       required: true
 
@@ -140,14 +140,14 @@ body:
     attributes:
       label: Number of Hooks (optional)
       description: How many hooks does your extension provide?
-      placeholder: "e.g., 0"
+      placeholder: 'e.g., 0'
 
   - type: textarea
     id: tags
     attributes:
       label: Tags
       description: 2-5 relevant tags (lowercase, separated by commas)
-      placeholder: "issue-tracking, jira, atlassian, automation"
+      placeholder: 'issue-tracking, jira, atlassian, automation'
     validations:
       required: true
 
@@ -209,9 +209,9 @@ body:
         **Tested on:**
         - macOS 14.0 with Spec Kit v0.1.0
         - Linux Ubuntu 22.04 with Spec Kit v0.1.0
-        
+
         **Test project:** [Link or description]
-        
+
         **Test scenarios:**
         1. Installed extension
         2. Configured settings
@@ -230,7 +230,7 @@ body:
         ```bash
         # Install extension
         specify extension add --from https://github.com/your-org/spec-kit-your-extension/archive/refs/tags/v1.0.0.zip
-        
+
         # Use a command
         /speckit.your-extension.command-name arg1 arg2
         ```

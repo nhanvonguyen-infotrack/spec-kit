@@ -56,30 +56,30 @@ your-extension/
 Verify your manifest is valid:
 
 ```yaml
-schema_version: "1.0"
+schema_version: '1.0'
 
 extension:
-  id: "your-extension"           # Unique lowercase-hyphenated ID
-  name: "Your Extension Name"     # Human-readable name
-  version: "1.0.0"                # Semantic version
-  description: "Brief description (one sentence)"
-  author: "Your Name or Organization"
-  repository: "https://github.com/your-org/spec-kit-your-extension"
-  license: "MIT"
-  homepage: "https://github.com/your-org/spec-kit-your-extension"
+  id: 'your-extension' # Unique lowercase-hyphenated ID
+  name: 'Your Extension Name' # Human-readable name
+  version: '1.0.0' # Semantic version
+  description: 'Brief description (one sentence)'
+  author: 'Your Name or Organization'
+  repository: 'https://github.com/your-org/spec-kit-your-extension'
+  license: 'MIT'
+  homepage: 'https://github.com/your-org/spec-kit-your-extension'
 
 requires:
-  speckit_version: ">=0.1.0"    # Required spec-kit version
+  speckit_version: '>=0.1.0' # Required spec-kit version
 
 provides:
-  commands:                       # List all commands
-    - name: "speckit.your-extension.command"
-      file: "commands/command.md"
-      description: "Command description"
+  commands: # List all commands
+    - name: 'speckit.your-extension.command'
+      file: 'commands/command.md'
+      description: 'Command description'
 
-tags:                             # 2-5 relevant tags
-  - "category"
-  - "tool-name"
+tags: # 2-5 relevant tags
+  - 'category'
+  - 'tool-name'
 ```
 
 **Validation Checklist**:
@@ -139,7 +139,7 @@ Spec Kit uses a dual-catalog system. For details about how catalogs work, see th
 
 ```bash
 # Fork on GitHub
-# https://github.com/github/spec-kit/fork
+# https://github.com/nhanvonguyen-infotrack/spec-kit/fork
 
 # Clone your fork
 git clone https://github.com/YOUR-USERNAME/spec-kit.git
@@ -182,11 +182,7 @@ Edit `extensions/catalog.community.json` and add your extension:
         "commands": 3,
         "hooks": 1
       },
-      "tags": [
-        "category",
-        "tool-name",
-        "feature"
-      ],
+      "tags": ["category", "tool-name", "feature"],
       "verified": false,
       "downloads": 0,
       "stars": 0,
@@ -247,7 +243,7 @@ git commit -m "Add your-extension to community catalog
 git push origin add-your-extension
 
 # Create Pull Request on GitHub
-# https://github.com/github/spec-kit/compare
+# https://github.com/nhanvonguyen-infotrack/spec-kit/compare
 ```
 
 **Pull Request Template**:
@@ -262,9 +258,11 @@ git push origin add-your-extension
 **Repository**: https://github.com/your-org/spec-kit-your-extension
 
 ### Description
+
 Brief description of what your extension does.
 
 ### Checklist
+
 - [x] Valid extension.yml manifest
 - [x] README.md with installation and usage docs
 - [x] LICENSE file included
@@ -276,11 +274,14 @@ Brief description of what your extension does.
 - [x] Added to Community Extensions table in README.md
 
 ### Testing
+
 Tested on:
+
 - macOS 13.0+ with spec-kit 0.1.0
 - Project: [Your test project]
 
 ### Additional Notes
+
 Any additional context or notes for reviewers.
 ```
 
@@ -362,7 +363,7 @@ When releasing a new version:
 
    ```yaml
    extension:
-     version: "1.1.0"  # Updated version
+     version: '1.1.0' # Updated version
    ```
 
 2. **Update CHANGELOG.md**:
@@ -371,9 +372,11 @@ When releasing a new version:
    ## [1.1.0] - 2026-02-15
 
    ### Added
+
    - New feature X
 
    ### Fixed
+
    - Bug fix Y
    ```
 
@@ -557,5 +560,5 @@ Use 2-5 tags that best describe your extension.
 
 ---
 
-*Last Updated: 2026-01-28*
-*Catalog Format Version: 1.0*
+_Last Updated: 2026-01-28_
+_Catalog Format Version: 1.0_

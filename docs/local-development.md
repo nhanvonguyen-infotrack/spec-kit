@@ -7,7 +7,7 @@ This guide shows how to iterate on the `specify` CLI locally without publishing 
 ## 1. Clone and Switch Branches
 
 ```bash
-git clone https://github.com/github/spec-kit.git
+git clone https://github.com/nhanvonguyen-infotrack/spec-kit.git
 cd spec-kit
 # Work on a feature branch
 git checkout -b your-feature-branch
@@ -60,7 +60,7 @@ You can also point uvx at a specific branch without merging:
 ```bash
 # Push your working branch first
 git push origin your-feature-branch
-uvx --from git+https://github.com/github/spec-kit.git@your-feature-branch specify init demo-branch-test --script ps
+uvx --from git+https://github.com/nhanvonguyen-infotrack/spec-kit.git@your-feature-branch specify init demo-branch-test --script ps
 ```
 
 ### 4a. Absolute Path uvx (Run From Anywhere)
@@ -141,14 +141,14 @@ specify init demo --skip-tls --ai gemini --ignore-agent-tools --script ps
 
 ## 10. Rapid Edit Loop Summary
 
-| Action | Command |
-|--------|---------|
-| Run CLI directly | `python -m src.specify_cli --help` |
-| Editable install | `uv pip install -e .` then `specify ...` |
-| Local uvx run (repo root) | `uvx --from . specify ...` |
-| Local uvx run (abs path) | `uvx --from /mnt/c/GitHub/spec-kit specify ...` |
-| Git branch uvx | `uvx --from git+URL@branch specify ...` |
-| Build wheel | `uv build` |
+| Action                    | Command                                         |
+| ------------------------- | ----------------------------------------------- |
+| Run CLI directly          | `python -m src.specify_cli --help`              |
+| Editable install          | `uv pip install -e .` then `specify ...`        |
+| Local uvx run (repo root) | `uvx --from . specify ...`                      |
+| Local uvx run (abs path)  | `uvx --from /mnt/c/GitHub/spec-kit specify ...` |
+| Git branch uvx            | `uvx --from git+URL@branch specify ...`         |
+| Build wheel               | `uv build`                                      |
 
 ## 11. Cleaning Up
 
@@ -160,13 +160,13 @@ rm -rf .venv dist build *.egg-info
 
 ## 12. Common Issues
 
-| Symptom | Fix |
-|---------|-----|
-| `ModuleNotFoundError: typer` | Run `uv pip install -e .` |
-| Scripts not executable (Linux) | Re-run init or `chmod +x scripts/*.sh` |
-| Git step skipped | You passed `--no-git` or Git not installed |
-| Wrong script type downloaded | Pass `--script sh` or `--script ps` explicitly |
-| TLS errors on corporate network | Try `--skip-tls` (not for production) |
+| Symptom                         | Fix                                            |
+| ------------------------------- | ---------------------------------------------- |
+| `ModuleNotFoundError: typer`    | Run `uv pip install -e .`                      |
+| Scripts not executable (Linux)  | Re-run init or `chmod +x scripts/*.sh`         |
+| Git step skipped                | You passed `--no-git` or Git not installed     |
+| Wrong script type downloaded    | Pass `--script sh` or `--script ps` explicitly |
+| TLS errors on corporate network | Try `--skip-tls` (not for production)          |
 
 ## 13. Next Steps
 
