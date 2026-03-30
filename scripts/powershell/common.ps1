@@ -68,28 +68,22 @@ function Get-CurrentBranch {
     }
 
     # For non-git repos, try to find the latest feature directory
+    $repoRoot = Get-RepoRoot
     $specsDir = Join-Path $repoRoot "specs"
     
     if (Test-Path $specsDir) {
+        # Look for task type directories (features, bugs, hotfix, chore)
+        $taskTypes = @('features', 'bugs', 'hotfix', 'chore')
         $latestFeature = ""
-        $highest = 0
-        $latestTimestamp = ""
-
-        Get-ChildItem -Path $specsDir -Directory | ForEach-Object {
-            if ($_.Name -match '^(\d{8}-\d{6})-') {
-                # Timestamp-based branch: compare lexicographically
-                $ts = $matches[1]
-                if ($ts -gt $latestTimestamp) {
-                    $latestTimestamp = $ts
-                    $latestFeature = $_.Name
-                }
-            } elseif ($_.Name -match '^(\d{3})-') {
-                $num = [int]$matches[1]
-                if ($num -gt $highest) {
-                    $highest = $num
-                    # Only update if no timestamp branch found yet
-                    if (-not $latestTimestamp) {
-                        $latestFeature = $_.Name
+        $latestModified = [datetime]::MinValue
+        
+        foreach ($taskType in $taskTypes) {
+            $taskTypeDir = Join-Path $specsDir $taskType
+            if (Test-Path $taskTypeDir) {
+                Get-ChildItem -Path $taskTypeDir -Directory | ForEach-Object {
+                    if ($_.LastWriteTime -gt $latestModified) {
+                        $latestModified = $_.LastWriteTime
+                        $latestFeature = "$taskType/$($_.Name)"
                     }
                 }
             }
@@ -139,9 +133,13 @@ function Test-FeatureBranch {
         return $true
     }
     
-    if ($Branch -notmatch '^[0-9]{3}-' -and $Branch -notmatch '^\d{8}-\d{6}-') {
+    # Check for new format: <task-type>/<jira-id>-<short-name>
+    # Valid task types: features, bugs, hotfix, chore
+    # Example: features/GPDOC-12345-user-auth
+    if ($Branch -notmatch '^(features|bugs|hotfix|chore)/[A-Z]+-\d+-') {
         Write-Output "ERROR: Not on a feature branch. Current branch: $Branch"
-        Write-Output "Feature branches should be named like: 001-feature-name or 20260319-143022-feature-name"
+        Write-Output "Feature branches should be named like: features/GPDOC-12345-feature-name"
+        Write-Output "Valid task types: features, bugs, hotfix, chore"
         return $false
     }
     return $true
@@ -149,7 +147,17 @@ function Test-FeatureBranch {
 
 function Get-FeatureDir {
     param([string]$RepoRoot, [string]$Branch)
-    Join-Path $RepoRoot "specs/$Branch"
+    
+    # Extract task type and feature name from branch
+    # Branch format: <task-type>/<jira-id>-<short-name>
+    if ($Branch -match '^(features|bugs|hotfix|chore)/(.+)$') {
+        $taskType = $Matches[1]
+        $featureName = $Matches[2]
+        return Join-Path $RepoRoot "specs/$taskType/$featureName"
+    }
+    
+    # Fallback for old format or unexpected branch names
+    return Join-Path $RepoRoot "specs/$Branch"
 }
 
 function Get-FeaturePathsEnv {

@@ -1,6 +1,6 @@
 ---
 description: Create or update the feature specification from a natural language feature description.
-handoffs: 
+handoffs:
   - label: Build Technical Plan
     agent: speckit.plan
     prompt: Create a plan for the spec. I am building with...
@@ -24,6 +24,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 ## Pre-Execution Checks
 
 **Check for extension hooks (before specification)**:
+
 - Check if `.specify/extensions.yml` exists in the project root.
 - If it exists, read it and look for entries under the `hooks.before_specify` key
 - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
@@ -33,6 +34,7 @@ You **MUST** consider the user input before proceeding (if not empty).
   - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
+
     ```
     ## Extension Hooks
 
@@ -43,7 +45,9 @@ You **MUST** consider the user input before proceeding (if not empty).
     Prompt: {prompt}
     To execute: `/{command}`
     ```
+
   - **Mandatory hook** (`optional: false`):
+
     ```
     ## Extension Hooks
 
@@ -53,6 +57,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
     Wait for the result of the hook command before proceeding to the Outline.
     ```
+
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 ## Outline
@@ -61,8 +66,42 @@ The text the user typed after `/speckit.specify` in the triggering message **is*
 
 Given that feature description, do this:
 
-1. **Generate a concise short name** (2-4 words) for the branch:
-   - Analyze the feature description and extract the most meaningful keywords
+1. **Gather branch information and generate short name**:
+
+   a. **Assess user input sufficiency**:
+   - Check if the feature description from user input is clear and contains enough information
+   - If description is vague, missing context, or lacks key details, proceed to step b
+   - If description is clear and sufficient, skip to step d
+
+   b. **Get Jira issue information (OPTIONAL - only if needed)**:
+   - Ask: "To better understand the requirements, would you like to provide a Jira issue link? (e.g., https://infotrack.atlassian.net/browse/GPDOC-12345) or type 'skip' to continue without it"
+   - If user provides a Jira link:
+     - Extract the issue key from the link (e.g., GPDOC-12345)
+     - Extract the cloud ID from the link or use `mcp_atlassian_atl_getAccessibleAtlassianResources` to get available cloud IDs
+     - Activate Jira issue management tools if not already available: use `activate_jira_issue_management_tools`
+     - Fetch the issue details using the appropriate Jira MCP tool to get:
+       - Issue type (Story, Task, Bug, Epic, etc.)
+       - Issue summary
+       - Issue description
+       - Issue key
+     - Use Jira information to supplement the feature description
+   - If user skips or provides invalid link, continue with user description only
+
+   c. **Determine task type and Jira ticket ID**:
+   - If Jira information was fetched:
+     - Use the Jira issue key (e.g., GPDOC-12345)
+     - Map Jira issue type to branch task type:
+       - Story, Task, Epic, Feature → `features`
+       - Bug, Defect → `bugs`
+       - Hotfix → `hotfix`
+       - Chore, Tech Debt, Improvement → `chore`
+   - If no Jira information:
+     - Ask: "What is the task type? (features/bugs/hotfix/chore)"
+     - Ask: "What is the Jira ticket ID? (e.g., GPDOC-12345)"
+     - Wait for user to provide both values
+
+   d. **Generate a concise short name** (2-4 words):
+   - Analyze the feature description (and Jira summary if available) to extract the most meaningful keywords
    - Create a 2-4 word short name that captures the essence of the feature
    - Use action-noun format when possible (e.g., "add-user-auth", "fix-payment-bug")
    - Preserve technical terms and acronyms (OAuth2, API, JWT, etc.)
@@ -73,144 +112,176 @@ Given that feature description, do this:
      - "Create a dashboard for analytics" → "analytics-dashboard"
      - "Fix payment processing timeout bug" → "fix-payment-timeout"
 
-2. **Create the feature branch** by running the script with `--short-name` (and `--json`). In sequential mode, do NOT pass `--number` — the script auto-detects the next available number. In timestamp mode, the script generates a `YYYYMMDD-HHMMSS` prefix automatically:
+   e. **Construct branch name**:
+   - Format: `<task-type>/<jira-ticket-id>-<short-name>`
+   - Example: `features/GPDOC-12345-user-auth`
+   - Example: `bugs/GPDOC-67890-fix-payment-timeout`
 
-   **Branch numbering mode**: Before running the script, check if `.specify/init-options.json` exists and read the `branch_numbering` value.
-   - If `"timestamp"`, add `--timestamp` (Bash) or `-Timestamp` (PowerShell) to the script invocation
-   - If `"sequential"` or absent, do not add any extra flag (default behavior)
+2. **Check for existing branches before creating new one**:
 
-   - Bash example: `{SCRIPT} --json --short-name "user-auth" "Add user authentication"`
-   - Bash (timestamp): `{SCRIPT} --json --timestamp --short-name "user-auth" "Add user authentication"`
-   - PowerShell example: `{SCRIPT} -Json -ShortName "user-auth" "Add user authentication"`
-   - PowerShell (timestamp): `{SCRIPT} -Json -Timestamp -ShortName "user-auth" "Add user authentication"`
+   a. First, fetch all remote branches to ensure we have the latest information:
+
+   ```bash
+   git fetch --all --prune
+   ```
+
+   b. Check if a branch with the same Jira ticket ID already exists:
+   - Remote branches: `git ls-remote --heads origin | grep -E 'refs/heads/<task-type>/<jira-ticket-id>-'`
+   - Local branches: `git branch | grep -E '^[* ]*<task-type>/<jira-ticket-id>-'`
+   - Specs directories: Check for directories matching `specs/<task-type>/<jira-ticket-id>-*`
+
+   c. Handle duplicate detection:
+   - If a branch/spec already exists with this Jira ticket ID, ERROR: "A branch/spec already exists for {jira-ticket-id}. Please use a different ticket ID or work on the existing branch."
+   - If no existing branch/spec found, proceed to create new branch
+
+   d. Run the script `.specify/scripts/powershell/create-new-feature.ps1 -Json "$ARGUMENTS"` with the task type, Jira ticket ID, and short-name:
+   - Pass `--task-type`, `--jira-id`, and `--short-name` along with the feature description
+   - Bash example: `.specify/scripts/powershell/create-new-feature.ps1 -Json "$ARGUMENTS" --json --task-type "features" --jira-id "GPDOC-12345" --short-name "user-auth" "Add user authentication"`
+   - PowerShell example: `.specify/scripts/powershell/create-new-feature.ps1 -Json "$ARGUMENTS" -Json -TaskType "features" -JiraId "GPDOC-12345" -ShortName "user-auth" "Add user authentication"`
 
    **IMPORTANT**:
-   - Do NOT pass `--number` — the script determines the correct next number automatically
-   - Always include the JSON flag (`--json` for Bash, `-Json` for PowerShell) so the output can be parsed reliably
+   - Check all three sources (remote branches, local branches, specs directories) for duplicate Jira ticket IDs
    - You must only ever run this script once per feature
    - The JSON is provided in the terminal as output - always refer to it to get the actual content you're looking for
    - The JSON output will contain BRANCH_NAME and SPEC_FILE paths
    - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot")
 
-3. Load `templates/spec-template.md` to understand required sections.
+3. Load `.specify/templates/spec-template.md` to understand required sections.
 
 4. Follow this execution flow:
+   1. **Gather comprehensive context**:
+      - Parse user description from Input (if empty: ERROR "No feature description provided")
+      - If Jira issue was fetched in step 1:
+        - Extract description from Jira issue
+        - Fetch comments/discussion from the Jira issue using Jira MCP tools
+        - Combine user input + Jira description + discussion comments to form complete context
+        - Prioritize information from Jira if conflicts arise
+      - If no Jira issue: use only user description
+   2. **Extract key concepts from all available sources**:
+      - Analyze user description, Jira description, and discussion comments
+      - Identify: actors, actions, data, constraints, acceptance criteria
+      - Note any technical decisions or context from discussions
+      - Document assumptions from discussion threads
+   3. **For unclear aspects**:
+      - Make informed guesses based on context, industry standards, and Jira discussions
+      - Only mark with [NEEDS CLARIFICATION: specific question] if:
+        - The choice significantly impacts feature scope or user experience
+        - Multiple reasonable interpretations exist with different implications
+        - No reasonable default exists
+        - Jira discussion doesn't provide clarity
+      - **LIMIT: Maximum 3 [NEEDS CLARIFICATION] markers total**
+      - Prioritize clarifications by impact: scope > security/privacy > user experience > technical details
+   4. **Fill User Scenarios & Testing section**:
+      - Use acceptance criteria from Jira if available
+      - If no clear user flow: ERROR "Cannot determine user scenarios"
+   5. **Generate Functional Requirements**:
+      - Each requirement must be testable
+      - Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
+      - Reference relevant Jira comments if they provide context
+   6. **Define Success Criteria**:
+      - Create measurable, technology-agnostic outcomes
+      - Include both quantitative metrics (time, performance, volume) and qualitative measures (user satisfaction, task completion)
+      - Each criterion must be verifiable without implementation details
+      - Use business goals from Jira if mentioned
+   7. **Identify Key Entities** (if data involved)
+   8. Return: SUCCESS (spec ready for planning)
 
-    1. Parse user description from Input
-       If empty: ERROR "No feature description provided"
-    2. Extract key concepts from description
-       Identify: actors, actions, data, constraints
-    3. For unclear aspects:
-       - Make informed guesses based on context and industry standards
-       - Only mark with [NEEDS CLARIFICATION: specific question] if:
-         - The choice significantly impacts feature scope or user experience
-         - Multiple reasonable interpretations exist with different implications
-         - No reasonable default exists
-       - **LIMIT: Maximum 3 [NEEDS CLARIFICATION] markers total**
-       - Prioritize clarifications by impact: scope > security/privacy > user experience > technical details
-    4. Fill User Scenarios & Testing section
-       If no clear user flow: ERROR "Cannot determine user scenarios"
-    5. Generate Functional Requirements
-       Each requirement must be testable
-       Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
-    6. Define Success Criteria
-       Create measurable, technology-agnostic outcomes
-       Include both quantitative metrics (time, performance, volume) and qualitative measures (user satisfaction, task completion)
-       Each criterion must be verifiable without implementation details
-    7. Identify Key Entities (if data involved)
-    8. Return: SUCCESS (spec ready for planning)
-
-5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
+5. **Write the specification** to SPEC_FILE using the template structure:
+   - Use all gathered information: user description, Jira description, Jira comments/discussion
+   - Replace placeholders with concrete details derived from all sources
+   - Include Jira ticket reference in the spec metadata/header if Jira was used
+   - Document key insights from Jira discussions in relevant sections
+   - Preserve section order and headings from template
+   - If Jira acceptance criteria exist, incorporate them into User Scenarios & Testing section
 
 6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
 
    a. **Create Spec Quality Checklist**: Generate a checklist file at `FEATURE_DIR/checklists/requirements.md` using the checklist template structure with these validation items:
 
-      ```markdown
-      # Specification Quality Checklist: [FEATURE NAME]
-      
-      **Purpose**: Validate specification completeness and quality before proceeding to planning
-      **Created**: [DATE]
-      **Feature**: [Link to spec.md]
-      
-      ## Content Quality
-      
-      - [ ] No implementation details (languages, frameworks, APIs)
-      - [ ] Focused on user value and business needs
-      - [ ] Written for non-technical stakeholders
-      - [ ] All mandatory sections completed
-      
-      ## Requirement Completeness
-      
-      - [ ] No [NEEDS CLARIFICATION] markers remain
-      - [ ] Requirements are testable and unambiguous
-      - [ ] Success criteria are measurable
-      - [ ] Success criteria are technology-agnostic (no implementation details)
-      - [ ] All acceptance scenarios are defined
-      - [ ] Edge cases are identified
-      - [ ] Scope is clearly bounded
-      - [ ] Dependencies and assumptions identified
-      
-      ## Feature Readiness
-      
-      - [ ] All functional requirements have clear acceptance criteria
-      - [ ] User scenarios cover primary flows
-      - [ ] Feature meets measurable outcomes defined in Success Criteria
-      - [ ] No implementation details leak into specification
-      
-      ## Notes
-      
-      - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
-      ```
+   ```markdown
+   # Specification Quality Checklist: [FEATURE NAME]
+
+   **Purpose**: Validate specification completeness and quality before proceeding to planning
+   **Created**: [DATE]
+   **Feature**: [Link to spec.md]
+
+   ## Content Quality
+
+   - [ ] No implementation details (languages, frameworks, APIs)
+   - [ ] Focused on user value and business needs
+   - [ ] Written for non-technical stakeholders
+   - [ ] All mandatory sections completed
+
+   ## Requirement Completeness
+
+   - [ ] No [NEEDS CLARIFICATION] markers remain
+   - [ ] Requirements are testable and unambiguous
+   - [ ] Success criteria are measurable
+   - [ ] Success criteria are technology-agnostic (no implementation details)
+   - [ ] All acceptance scenarios are defined
+   - [ ] Edge cases are identified
+   - [ ] Scope is clearly bounded
+   - [ ] Dependencies and assumptions identified
+
+   ## Feature Readiness
+
+   - [ ] All functional requirements have clear acceptance criteria
+   - [ ] User scenarios cover primary flows
+   - [ ] Feature meets measurable outcomes defined in Success Criteria
+   - [ ] No implementation details leak into specification
+
+   ## Notes
+
+   - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
+   ```
 
    b. **Run Validation Check**: Review the spec against each checklist item:
-      - For each item, determine if it passes or fails
-      - Document specific issues found (quote relevant spec sections)
+   - For each item, determine if it passes or fails
+   - Document specific issues found (quote relevant spec sections)
 
    c. **Handle Validation Results**:
+   - **If all items pass**: Mark checklist complete and proceed to step 7
 
-      - **If all items pass**: Mark checklist complete and proceed to step 7
+   - **If items fail (excluding [NEEDS CLARIFICATION])**:
+     1. List the failing items and specific issues
+     2. Update the spec to address each issue
+     3. Re-run validation until all items pass (max 3 iterations)
+     4. If still failing after 3 iterations, document remaining issues in checklist notes and warn user
 
-      - **If items fail (excluding [NEEDS CLARIFICATION])**:
-        1. List the failing items and specific issues
-        2. Update the spec to address each issue
-        3. Re-run validation until all items pass (max 3 iterations)
-        4. If still failing after 3 iterations, document remaining issues in checklist notes and warn user
+   - **If [NEEDS CLARIFICATION] markers remain**:
+     1. Extract all [NEEDS CLARIFICATION: ...] markers from the spec
+     2. **LIMIT CHECK**: If more than 3 markers exist, keep only the 3 most critical (by scope/security/UX impact) and make informed guesses for the rest
+     3. For each clarification needed (max 3), present options to user in this format:
 
-      - **If [NEEDS CLARIFICATION] markers remain**:
-        1. Extract all [NEEDS CLARIFICATION: ...] markers from the spec
-        2. **LIMIT CHECK**: If more than 3 markers exist, keep only the 3 most critical (by scope/security/UX impact) and make informed guesses for the rest
-        3. For each clarification needed (max 3), present options to user in this format:
+        ```markdown
+        ## Question [N]: [Topic]
 
-           ```markdown
-           ## Question [N]: [Topic]
-           
-           **Context**: [Quote relevant spec section]
-           
-           **What we need to know**: [Specific question from NEEDS CLARIFICATION marker]
-           
-           **Suggested Answers**:
-           
-           | Option | Answer | Implications |
-           |--------|--------|--------------|
-           | A      | [First suggested answer] | [What this means for the feature] |
-           | B      | [Second suggested answer] | [What this means for the feature] |
-           | C      | [Third suggested answer] | [What this means for the feature] |
-           | Custom | Provide your own answer | [Explain how to provide custom input] |
-           
-           **Your choice**: _[Wait for user response]_
-           ```
+        **Context**: [Quote relevant spec section]
 
-        4. **CRITICAL - Table Formatting**: Ensure markdown tables are properly formatted:
-           - Use consistent spacing with pipes aligned
-           - Each cell should have spaces around content: `| Content |` not `|Content|`
-           - Header separator must have at least 3 dashes: `|--------|`
-           - Test that the table renders correctly in markdown preview
-        5. Number questions sequentially (Q1, Q2, Q3 - max 3 total)
-        6. Present all questions together before waiting for responses
-        7. Wait for user to respond with their choices for all questions (e.g., "Q1: A, Q2: Custom - [details], Q3: B")
-        8. Update the spec by replacing each [NEEDS CLARIFICATION] marker with the user's selected or provided answer
-        9. Re-run validation after all clarifications are resolved
+        **What we need to know**: [Specific question from NEEDS CLARIFICATION marker]
+
+        **Suggested Answers**:
+
+        | Option | Answer                    | Implications                          |
+        | ------ | ------------------------- | ------------------------------------- |
+        | A      | [First suggested answer]  | [What this means for the feature]     |
+        | B      | [Second suggested answer] | [What this means for the feature]     |
+        | C      | [Third suggested answer]  | [What this means for the feature]     |
+        | Custom | Provide your own answer   | [Explain how to provide custom input] |
+
+        **Your choice**: _[Wait for user response]_
+        ```
+
+     4. **CRITICAL - Table Formatting**: Ensure markdown tables are properly formatted:
+        - Use consistent spacing with pipes aligned
+        - Each cell should have spaces around content: `| Content |` not `|Content|`
+        - Header separator must have at least 3 dashes: `|--------|`
+        - Test that the table renders correctly in markdown preview
+     5. Number questions sequentially (Q1, Q2, Q3 - max 3 total)
+     6. Present all questions together before waiting for responses
+     7. Wait for user to respond with their choices for all questions (e.g., "Q1: A, Q2: Custom - [details], Q3: B")
+     8. Update the spec by replacing each [NEEDS CLARIFICATION] marker with the user's selected or provided answer
+     9. Re-run validation after all clarifications are resolved
 
    d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
 
@@ -225,6 +296,7 @@ Given that feature description, do this:
      - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
    - For each executable hook, output the following based on its `optional` flag:
      - **Optional hook** (`optional: true`):
+
        ```
        ## Extension Hooks
 
@@ -235,7 +307,9 @@ Given that feature description, do this:
        Prompt: {prompt}
        To execute: `/{command}`
        ```
+
      - **Mandatory hook** (`optional: false`):
+
        ```
        ## Extension Hooks
 
@@ -243,6 +317,7 @@ Given that feature description, do this:
        Executing: `/{command}`
        EXECUTE_COMMAND: {command}
        ```
+
    - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 **NOTE:** The script creates and checks out the new branch and initializes the spec file before writing.
