@@ -6,7 +6,7 @@
 
 ### Changed
 
-- chore: bump version to 0.4.6
+- fix: fetch template version from fork repo (nhanvonguyen-infotrack/spec-kit)
 
 ## [0.4.5] - 2026-03-30
 
