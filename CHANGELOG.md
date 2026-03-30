@@ -2,6 +2,12 @@
 
 <!-- insert new changelog below this comment -->
 
+## [0.4.8] - 2026-03-30
+
+### Changed
+
+- chore: bump version to 0.4.8
+
 ## [0.4.6] - 2026-03-30
 
 ### Changed
